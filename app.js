@@ -1,11 +1,11 @@
 'use strict';
-/* MUSICTOOL — PWA para guitarristas. Sin dependencias, sin servicios externos. */
+/* MUSICTOOL — PWA para músicos de cuerda. Sin dependencias, sin servicios externos. */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const nm=i=>N[((i%12)+12)%12].replace('#','♯');
 const IVN=['1','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-const S={sk:0,sc:0,cr:0,cq:0,pr:0,ps:0,pm:0,pi:0,pro:true,look:store.get('look','pedal'),skin:store.get('skin','pedal')};
+const S={sk:0,sc:0,cr:0,cq:0,pr:0,ps:0,pm:0,pi:0,pro:true,look:store.get('look','solan'),skin:store.get('skin','solan')};
 
 /* ---------- DATOS ---------- */
 const SG=[
@@ -17,7 +17,6 @@ const SG=[
 ['Otras y exóticas',0,[['Bebop dominante','0 2 4 5 7 9 10 11'],['Bebop mayor','0 2 4 5 7 8 9 11'],['Húngara menor','0 2 3 6 7 8 11'],['Árabe (doble armónica)','0 1 4 5 7 8 11'],['Hirajoshi','0 2 3 7 8'],['In-Sen','0 1 5 7 10'],['Egipcia','0 2 5 7 10'],['Napolitana menor','0 1 3 5 7 8 11'],['Napolitana mayor','0 1 3 5 7 9 11'],['Prometeo','0 2 4 6 9 10'],['Enigmática','0 1 4 6 8 10 11']]]
 ];
 const SCALES=SG.flatMap(([g,pro,l])=>l.map(([n,iv])=>({n,g,pro:0,iv:iv.split(' ').map(Number)})));
-/* Formas móviles de guitarra (cuerdas 6→1, -1 = muteada). Valor = traste relativo a la cejilla. */
 const CH=[
  {n:'Mayor',s:'',iv:[0,4,7],E:[0,2,2,1,0,0],A:[-1,0,2,2,2,0]},
  {n:'Menor',s:'m',iv:[0,3,7],E:[0,2,2,0,0,0],A:[-1,0,2,2,1,0]},
@@ -30,7 +29,17 @@ const CH=[
  {n:'Disminuido',s:'dim',iv:[0,3,6],E:null,A:[-1,0,1,2,1,-1]}
 ];
 const OPEN=[40,45,50,55,59,64];
-const STYLES=[{n:'Rock',k:'rock'},{n:'Metal',k:'metal'},{n:'Punk',k:'punk'},{n:'Blues',k:'blues'},{n:'Pop',k:'pop'},{n:'Flamenco',k:'flamenco'},{n:'Paraguayo',k:'paraguayo'},{n:'Venezolano',k:'venezolano'},{n:'Mexicano',k:'mexicano'}];
+const STYLES=[
+ {n:'🎸 Rock',k:'rock'},
+ {n:'🤘 Metal',k:'metal'},
+ {n:'⚡ Punk',k:'punk'},
+ {n:'🎷 Blues',k:'blues'},
+ {n:'🎵 Pop',k:'pop'},
+ {n:'🇪🇸 Flamenco',k:'flamenco'},
+ {n:'🇵🇾 Paraguayo',k:'paraguayo'},
+ {n:'🇻🇪 Venezolano',k:'venezolano'},
+ {n:'🇲🇽 Mexicano',k:'mexicano'}
+];
 const PROG={
  rock:{M:['I IV V I','I bVII IV I','I V vi IV','I IV I V'],m:['i bVII bVI bVII','i bIII bVII IV','i iv bVII i','i bVII bVI V']},
  metal:{M:['I bVII bVI bVII','I bIII IV V','I bVI bVII I'],m:['i bVI bVII i','i bII i bVII','i bVI bIII bVII','i v bVI bVII']},
@@ -50,7 +59,7 @@ function parseTok(t,root){
 }
 const chordName=(r,q)=>nm(r)+CH[q].s, chordNotes=(r,q)=>CH[q].iv.map(i=>nm(r+i));
 
-/* ---------- AUDIO DE REFERENCIA (osciladores) ---------- */
+/* ---------- AUDIO DE REFERENCIA ---------- */
 let AC;
 const ac=()=>{
  if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'playback'});
@@ -63,7 +72,6 @@ function tone(f,d=1.4,v=.35,at=0,type='triangle'){
  o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.05)}catch(e){toast('No se pudo reproducir audio.')}
 }
 const mf=(m,a4=T.a4)=>a4*Math.pow(2,(m-69)/12);
-/* Guitarra sintetizada: cuerda pulsada (Karplus-Strong con afinación fraccionaria) */
 const PL={};
 function pluckBuf(c,f){
  const sr=c.sampleRate,key=Math.round(f*10)+'_'+sr;if(PL[key])return PL[key];
@@ -84,13 +92,77 @@ function pluck(f,at=0,v=.5){try{const c=ac(),s=c.createBufferSource(),g=c.create
 function chordMidis(r,q){const c=CH[q],eb=(r-4+12)%12,ab=(r-9+12)%12;let fr,b;if(c.E&&eb<=ab){fr=c.E;b=eb}else{fr=c.A;b=ab}return fr.map((x,i)=>x<0?-1:OPEN[i]+b+x).filter(x=>x>=0)}
 function playChord(r,q,at=0){chordMidis(r,q).forEach((m,k)=>pluck(mf(m),at+k*.035,.45-k*.02))}
 
-/* ---------- AFINADOR ---------- */
+/* ---------- AFINADOR CON TODOS LOS INSTRUMENTOS DE CUERDA ---------- */
 const INSTG=[
- ['Libre',[['chromatic','Cromático (cualquier nota)',''],['arpa','Arpa paraguaya (nota por cuerda)','','Toca una cuerda del arpa: el afinador muestra su nota. Afina cada cuerda a su nota de la escala de Do mayor.']]],
- ['Guitarras y vihuelas',[['guitar','Guitarra estándar','E2 A2 D3 G3 B3 E4'],['dropd','Guitarra Drop D','D2 A2 D3 G3 B3 E4'],['dadgad','Guitarra DADGAD','D2 A2 D3 G3 A3 D4'],['halfdown','Guitarra medio tono abajo','D#2 G#2 C#3 F#3 A#3 D#4'],['vihuela','Vihuela mexicana','A3 D4 G4 B3 E4'],['guitarron','Guitarrón mexicano','A2 D3 G3 C4 E3 A2']]],
- ['Bajos y contrabajos',[['bass','Bajo 4 cuerdas','E1 A1 D2 G2'],['bass5','Bajo 5 cuerdas','B0 E1 A1 D2 G2'],['tololoche','Tololoche / contrabajo','E1 A1 D2 G2']]],
- ['Cuerda frotada',[['violin','Violín','G3 D4 A4 E5'],['viola','Viola','C3 G3 D4 A4'],['cello','Violonchelo','C2 G2 D3 A3']]],
- ['Latinoamérica y más',[['cuatro','Cuatro venezolano','A3 D4 F#4 B3'],['charango','Charango','G4 C5 E5 A4 E5'],['uke','Ukelele','G4 C4 E4 A4'],['mandolin','Mandolina','G3 D4 A4 E5'],['banjo','Banjo 5 cuerdas','G4 D3 G3 B3 D4']]]
+ ['🌐 Modo Universal',[['chromatic','Cromático (cualquier nota o cuerda)','']]],
+ ['🎸 Guitarras (6, 7, 8 y 12 cuerdas)',[
+  ['guitar','Guitarra estándar (E A D G B E)','E2 A2 D3 G3 B3 E4'],
+  ['dropd','Guitarra Drop D (D A D G B E)','D2 A2 D3 G3 B3 E4'],
+  ['dropc','Guitarra Drop C (C G C F A D)','C2 G2 C3 F3 A3 D4'],
+  ['halfdown','Guitarra ½ tono abajo (Eb Ab Db Gb Bb Eb)','D#2 G#2 C#3 F#3 A#3 D#4'],
+  ['fulldown','Guitarra 1 tono abajo (D G C F A D)','D2 G2 C3 F3 A3 D4'],
+  ['openg','Guitarra Open G (D G D G B D)','D2 G2 D3 G3 B3 D4'],
+  ['opend','Guitarra Open D (D A D F# A D)','D2 A2 D3 F#3 A3 D4'],
+  ['opene','Guitarra Open E (E B E G# B E)','E2 B2 E3 G#3 B3 E4'],
+  ['dadgad','Guitarra DADGAD','D2 A2 D3 G3 A3 D4'],
+  ['guitar7','Guitarra 7 cuerdas (B E A D G B E)','B1 E2 A2 D3 G3 B3 E4'],
+  ['guitar8','Guitarra 8 cuerdas (F# B E A D G B E)','F#1 B1 E2 A2 D3 G3 B3 E4'],
+  ['guitar12','Guitarra 12 cuerdas (pares)','E2 E3 A2 A3 D3 D4 G3 G4 B3 E4'],
+  ['requinto','Requinto (A D G C E A)','A2 D3 G3 C4 E4 A4']
+ ]],
+ ['🎻 Cuerda Frotada (Orquesta y Folk)',[
+  ['violin','Violín (G D A E)','G3 D4 A4 E5'],
+  ['viola','Viola (C G D A)','C3 G3 D4 A4'],
+  ['cello','Violonchelo (C G D A)','C2 G2 D3 A3'],
+  ['doublebass','Contrabajo / Tololoche (E A D G)','E1 A1 D2 G2'],
+  ['nyckelharpa','Nyckelharpa (A C G C)','A2 C3 G3 C4']
+ ]],
+ ['🎸 Bajos Eléctricos y Acústicos',[
+  ['bass','Bajo 4 cuerdas (E A D G)','E1 A1 D2 G2'],
+  ['bass5','Bajo 5 cuerdas (B E A D G)','B0 E1 A1 D2 G2'],
+  ['bass6','Bajo 6 cuerdas (B E A D G C)','B0 E1 A1 D2 G2 C3'],
+  ['bassdropd','Bajo Drop D (D A D G)','D1 A1 D2 G2'],
+  ['bajoquinto','Bajo quinto mexicano (A D G C F)','A1 D2 G2 C3 F3'],
+  ['bajosexto','Bajo sexto mexicano (E A D G C F)','E1 A1 D2 G2 C3 F3']
+ ]],
+ ['🌎 Latinoamérica y Folclore',[
+  ['arpa','Arpa paraguaya / llanera (escala diatónica)','','Toca una cuerda del arpa: detecta cada nota al instante.'],
+  ['cuatro','Cuatro venezolano (A D F# B)','A3 D4 F#4 B3'],
+  ['cuatropr','Cuatro puertorriqueño (B E A D G)','B2 E3 A3 D4 G4'],
+  ['charango','Charango andino (G C E A E)','G4 C5 E5 A4 E5'],
+  ['ronroco','Ronroco (D G B E B)','D3 G3 B3 E4 B4'],
+  ['vihuela','Vihuela mexicana (A D G B E)','A3 D4 G4 B3 E4'],
+  ['guitarron','Guitarrón mexicano (A D G C E A)','A2 D3 G3 C4 E3 A2'],
+  ['jarana','Jarana jarocha (G C E A G)','G3 C4 E4 A4 G4'],
+  ['tres','Tres cubano (G C E)','G3 C4 E4'],
+  ['tiple','Tiple colombiano (D G B E)','D3 G3 B3 E4'],
+  ['cavaquinho','Cavaquinho brasileño (D G B D)','D4 G4 B4 D5'],
+  ['bandolim','Bandolim brasileño (G D A E)','G3 D4 A4 E5']
+ ]],
+ ['🪕 Ukeleles, Banjos, Mandolinas y Laúdes',[
+  ['uke','Ukelele estándar (G C E A)','G4 C4 E4 A4'],
+  ['ukelowg','Ukelele Low G (G3 C E A)','G3 C4 E4 A4'],
+  ['ukebar','Ukelele barítono (D G B E)','D3 G3 B3 E4'],
+  ['banjo','Banjo 5 cuerdas Open G (G D G B D)','G4 D3 G3 B3 D4'],
+  ['banjo4','Banjo tenor 4 cuerdas (C G D A)','C3 G3 D4 A4'],
+  ['mandolin','Mandolina (G D A E)','G3 D4 A4 E5'],
+  ['mandola','Mandola (C G D A)','C3 G3 D4 A4'],
+  ['bouzouki','Bouzouki griego (C F A D)','C3 F3 A3 D4'],
+  ['bouzoukiir','Bouzouki irlandés (G D A D)','G2 D3 A3 D4'],
+  ['laud','Laúd español / Bandurria (G# C# F# B E A)','G#3 C#4 F#4 B4 E5 A5'],
+  ['balalaika','Balalaika prima (E E A)','E4 E4 A4'],
+  ['domra','Domra (E A D)','E3 A3 D4']
+ ]],
+ ['🌏 Cuerdas del Mundo (Oriente, Asia y África)',[
+  ['oud','Oud árabe (C F A D G C)','C2 F2 A2 D3 G3 C4'],
+  ['saz','Saz / Bağlama turco (G D A)','G2 D3 A3'],
+  ['sitar','Sitar indio (C G C G C F)','C2 G2 C3 G3 C4 F4'],
+  ['shamisen','Shamisen japonés (C G C)','C3 G3 C4'],
+  ['koto','Koto japonés (escala Hirajoshi)','','Toca cualquier cuerda del koto: el afinador identifica la nota exacta.'],
+  ['erhu','Erhu chino (D A)','D4 A4'],
+  ['guzheng','Guzheng chino (pentatónica D)','','Toca cada cuerda del guzheng para verificar su altura en Hz.'],
+  ['kora','Kora africana (21 cuerdas)','','Afinación libre: muestra nota, octava y frecuencia exacta en Hz.']
+ ]]
 ];
 const INSTMAP={};INSTG.forEach(([g,l])=>l.forEach(([k,n,s,h])=>INSTMAP[k]={n,s:s?s.split(' '):null,hint:h}));
 const T={a4:store.get('a4',440),mode:(k=>INSTMAP[k]?k:'chromatic')(store.get('inst','chromatic')),run:false,hist:[],miss:0,needle:0,target:0,last:0,ok:false};
@@ -111,8 +183,8 @@ function buildInst(){
 }
 function renderStrings(){
  const el=$('#strings'),I=INSTMAP[T.mode];
- if(!I.s){el.innerHTML=`<small class="dim">${I.hint||'Toca cualquier nota: se detecta sola.'}</small>`;return}
- el.innerHTML=[...new Set(I.s)].map(n=>`<button data-a="str" data-v="${n}">${n.replace(/\d/,'').replace('#','♯')}<small style="color:var(--mut);font-size:11px;margin-left:3px">${n.slice(-1)}</small></button>`).join('');
+ if(!I.s){el.innerHTML=`<small class="dim">${I.hint||'Toca cualquier cuerda o nota: detección automática en tiempo real.'}</small>`;return}
+ el.innerHTML=[...new Set(I.s)].map(n=>`<button data-a="str" data-v="${n}">${n.replace(/\d/,'').replace('#','♯')}<small style="opacity:.75;font-size:11px;margin-left:3px">${n.slice(-1)}</small></button>`).join('');
 }
 function yin(b,sr){
  let e=0;for(let i=0;i<b.length;i++)e+=b[i]*b[i];
@@ -127,15 +199,15 @@ function yin(b,sr){
 }
 async function startTuner(){
  if(T.run)return;tmsg('');
- if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){tmsg('Este navegador no permite usar el micrófono aquí. Abre la app con HTTPS en Chrome (Android) o Safari (iPhone).');return}
+ if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){tmsg('Este navegador no permite usar el micrófono aquí. Abre la app con HTTPS en Chrome o Safari.');return}
  try{T.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
- catch(e){tmsg(e.name==='NotAllowedError'||e.name==='SecurityError'?'Permiso de micrófono denegado. Actívalo en los ajustes del navegador para este sitio y vuelve a intentarlo.':e.name==='NotFoundError'?'No se encontró ningún micrófono en este dispositivo.':e.name==='NotReadableError'?'El micrófono está siendo usado por otra aplicación.':'No se pudo acceder al micrófono ('+e.name+').');return}
+ catch(e){tmsg(e.name==='NotAllowedError'||e.name==='SecurityError'?'Permiso de micrófono denegado. Actívalo en los ajustes del navegador para este sitio.':e.name==='NotFoundError'?'No se encontró ningún micrófono en este dispositivo.':e.name==='NotReadableError'?'El micrófono está siendo usado por otra aplicación.':'No se pudo acceder al micrófono ('+e.name+').');return}
  try{
   T.ctx=new (window.AudioContext||window.webkitAudioContext)();await T.ctx.resume();
   const src=T.ctx.createMediaStreamSource(T.stream);T.an=T.ctx.createAnalyser();T.an.fftSize=4096;src.connect(T.an);T.buf=new Float32Array(4096);
  }catch(e){tmsg('No se pudo iniciar el análisis de audio.');stopTuner();return}
  T.run=true;T.hist=[];T.miss=0;T.last=0;
- $('#mic').textContent='Detener';$('#mic').classList.add('off');$('#status').textContent='Toca una cuerda…';
+ $('#mic').textContent='Detener micrófono';$('#mic').classList.add('off');$('#status').textContent='Toca una cuerda…';
  requestAnimationFrame(loop);
 }
 function stopTuner(){
@@ -154,11 +226,19 @@ function loop(ts){
  T.needle+=(T.target-T.needle)*.25;
  $('#needle').setAttribute('transform',`rotate(${T.needle/50*55} 150 150)`);
 }
+function updateLeds(cents,active){
+ const leds=$$('.digi-led i');if(!leds.length)return;
+ const idx=active?Math.max(0,Math.min(10,Math.round((cents+50)/10))): -1;
+ leds.forEach((el,i)=>el.classList.toggle('on',i===idx));
+}
 function idle(msg){
  T.target=0;T.ok=false;$('.gauge').classList.remove('ok');
- $('#note').textContent='–';$('#oct').textContent='';$('#hz').textContent='0.0';$('#cents').textContent='';$('#status').textContent=msg;
+ $('#note').textContent='–';$('#oct').textContent='';$('#hz').textContent='0.0 Hz';$('#cents').textContent='0 cents';
+ const tn=$('#target-note');if(tn)tn.textContent='—';
+ $('#status').textContent=msg;
  $$('#strings button').forEach(b=>b.classList.remove('hit'));
  $('#needle').setAttribute('transform',`rotate(0 150 150)`);T.needle=0;
+ updateLeds(0,false);
 }
 function show(f){
  const m=12*Math.log2(f/T.a4)+69;let tm=Math.round(m);
@@ -168,10 +248,14 @@ function show(f){
  }
  const c=(m-tm)*100,ok=Math.abs(c)<=5;
  T.target=Math.max(-50,Math.min(50,c));
- $('#note').textContent=nm(tm);$('#oct').textContent=Math.floor(tm/12)-1;
- $('#hz').textContent=f.toFixed(1);$('#cents').textContent=(c>0?'+':'')+c.toFixed(0)+' cents';
- $('#status').textContent=ok?'AFINADA':c<0?'BAJA — sube la cuerda':'ALTA — afloja la cuerda';
+ const noteName=nm(tm),octNum=Math.floor(tm/12)-1;
+ $('#note').textContent=noteName;$('#oct').textContent=octNum;
+ $('#hz').textContent=f.toFixed(1)+' Hz';
+ $('#cents').textContent=(c>0?'+':'')+c.toFixed(0)+' cents';
+ const tn=$('#target-note');if(tn)tn.textContent=noteName+octNum+' ('+mf(tm).toFixed(1)+' Hz)';
+ $('#status').textContent=ok?'● AFINADA EN PUNTO':c<0?'◀ BAJA — tensa la cuerda':'▶ ALTA — afloja la cuerda';
  $('.gauge').classList.toggle('ok',ok);
+ updateLeds(T.target,true);
 }
 
 /* ---------- DIBUJOS ---------- */
@@ -184,7 +268,7 @@ function fretboard(pcs,root){
  for(let i=0;i<6;i++)for(let f=0;f<=12;f++){const pc=(OPEN[i]+f)%12;if(!pcs.includes(pc))continue;
   const x=f?18+(f-.5)*28:9,y=15+(5-i)*20;
   h+=`<circle class="${pc===root?'r':'d'}" cx="${x}" cy="${y}" r="8.5"/><text x="${x}" y="${y+3}">${nm(pc)}</text>`}
- for(let f=1;f<=12;f++)if([3,5,7,9,12].includes(f))h+=`<text x="${18+(f-.5)*28}" y="129" style="fill:#777">${f}</text>`;
+ for(let f=1;f<=12;f++)if([3,5,7,9,12].includes(f))h+=`<text x="${18+(f-.5)*28}" y="129" style="fill:#bae6fd">${f}</text>`;
  return h+'</svg>';
 }
 function diagram(fr){
@@ -208,7 +292,7 @@ function renderScales(){
  $('#scales-body').innerHTML=keys('sk',S.sk)+
  `<select id="scsel" class="sel" aria-label="Escala">${SG.map(([g,,l])=>`<optgroup label="${g}">${l.map(([n])=>{const i=SCALES.findIndex(x=>x.n===n);return `<option value="${i}"${i===S.sc?' selected':''}>${n}</option>`}).join('')}</optgroup>`).join('')}</select>
  <div class="pedal"><h3>${nm(S.sk)} ${sc.n}</h3><div class="notes">${pcs.map((p,i)=>`<div class="note ${i?'':'root'}"><b>${nm(p)}</b><small>${IVN[sc.iv[i]]}</small></div>`).join('')}</div>
- <p class="dim">Mástil: naranja = tónica.</p>${fretboard(pcs,S.sk)}</div>
+ <p class="dim">Mástil: azul brillante = tónica.</p>${fretboard(pcs,S.sk)}</div>
  <button class="cta sm" data-a="playscale">▶ Escuchar escala</button>`;
 }
 function renderChords(){
@@ -231,22 +315,38 @@ function renderProg(){
  <div class="chords">${p.map((c,i)=>`<div class="ch" data-a="pc" data-v="${i}"><small>${c.roman}</small><b>${chordName(c.r,c.q)}</b><small>${chordNotes(c.r,c.q).join(' ')}</small><br><u data-a="open" data-v="${i}">Ver diagrama</u></div>`).join('')}</div>
  <button class="cta sm" data-a="playprog">▶ Reproducir progresión</button>`;
 }
-const SKINS=[{k:'pedal',n:'Clásico',tag:'Afina. Practica. Compón.'},
- {k:'flamenco',n:'Flamenco',tag:'Duende y compás.',ps:'flamenco',pm:1,sc:'Frigio dominante',sk:4,pr:9},
- {k:'paraguayo',n:'Paraguayo',tag:'Polca, guarania y arpa.',ps:'paraguayo',pm:0,sc:'Mayor'},
- {k:'venezolano',n:'Venezolano',tag:'Joropo, vals y cuatro.',ps:'venezolano',pm:0,sc:'Mayor'},
- {k:'mexicano',n:'Mexicano',tag:'Mariachi, son y ranchera.',ps:'mexicano',pm:0,sc:'Mayor'}];
+const SKINS=[
+ {k:'solan',n:'💧 Cristal Azul',tag:'Afina. Practica. Compón.'},
+ {k:'flamenco',n:'🇪🇸 España',tag:'Duende, compás y guitarra.',ps:'flamenco',pm:1,sc:'Frigio dominante',sk:4,pr:9},
+ {k:'paraguayo',n:'🇵🇾 Paraguay',tag:'Polca, guarania y arpa.',ps:'paraguayo',pm:0,sc:'Mayor'},
+ {k:'venezolano',n:'🇻🇪 Venezuela',tag:'Joropo, vals y cuatro.',ps:'venezolano',pm:0,sc:'Mayor'},
+ {k:'mexicano',n:'🇲🇽 México',tag:'Mariachi, son y ranchera.',ps:'mexicano',pm:0,sc:'Mayor'},
+ {k:'argentino',n:'🇦🇷 Argentina',tag:'Tango, folclore y rock nacional.',ps:'rock',pm:0,sc:'Mayor'},
+ {k:'brasileno',n:'🇧🇷 Brasil',tag:'Bossa, samba y choro.',ps:'pop',pm:0,sc:'Mayor 7'},
+ {k:'colombiano',n:'🇨🇴 Colombia',tag:'Cumbia, vallenato y tiple.',ps:'paraguayo',pm:0,sc:'Mayor'},
+ {k:'chileno',n:'🇨🇱 Chile',tag:'Cueca, tonada y canto nuevo.',ps:'paraguayo',pm:0,sc:'Mayor'},
+ {k:'peruano',n:'🇵🇪 Perú',tag:'Vals criollo, landó y charango.',ps:'flamenco',pm:1,sc:'Menor armónica'},
+ {k:'eeuu',n:'🇺🇸 EE. UU.',tag:'Blues, country, jazz y rock.',ps:'blues',pm:0,sc:'Pentatónica menor'},
+ {k:'japon',n:'🇯🇵 Japón',tag:'Koto, shamisen y escalas niponas.',ps:'pop',pm:1,sc:'Hirajoshi'}
+];
 function setSkin(k,apply){
  const sk=SKINS.find(x=>x.k===k)||SKINS[0];S.skin=sk.k;store.set('skin',sk.k);document.documentElement.dataset.skin=sk.k;const tag=$('.tag');if(tag)tag.textContent=sk.tag;
- if(apply&&sk.ps){S.ps=STYLES.findIndex(x=>x.k===sk.ps);S.pm=sk.pm;S.sc=SCALES.findIndex(x=>x.n===sk.sc);if(sk.sk!=null)S.sk=sk.sk;if(sk.pr!=null)S.pr=sk.pr;genProg();toast('Estilo '+sk.n+': escala y progresiones ajustadas.')}
+ if(apply&&sk.ps){const idx=STYLES.findIndex(x=>x.k===sk.ps);if(idx>=0)S.ps=idx;S.pm=sk.pm;const sidx=SCALES.findIndex(x=>x.n===sk.sc);if(sidx>=0)S.sc=sidx;if(sk.sk!=null)S.sk=sk.sk;if(sk.pr!=null)S.pr=sk.pr;genProg();toast(sk.n+': escala y progresiones listas.')}
 }
 function renderLook(){
  const el=$('#look');if(!el)return;
- el.innerHTML=`<b>Apariencia</b><div class="chips" style="margin:10px 0">${[['pedal','Pedal'],['aero','Cristal']].map(([k,n])=>chip('look',k,n,k===S.look)).join('')}</div><div class="chips" style="margin:0">${SKINS.map(s=>chip('skin',s.k,s.n,s.k===S.skin)).join('')}</div>`;
+ el.innerHTML=`<b>Cristal y Banderas del Mundo</b>
+ <div class="chips" style="margin:10px 0">${[['solan','💧 Botella Cristal'],['mar','🌊 Azul Mar']].map(([k,n])=>chip('look',k,n,k===S.look)).join('')}</div>
+ <div class="chips" style="margin:0">${SKINS.map(s=>chip('skin',s.k,s.n,s.k===S.skin)).join('')}</div>`;
 }
 function renderHome(){
  renderLook();
- const it=[['tuner','Afinador','Guitarra, violín, bajo, guitarrón y más'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop, flamenco y más']];
+ const it=[
+  ['tuner','Afinador','Digital + aguja para +40 instrumentos de cuerda'],
+  ['scales','Escalas','Más de 40 escalas, modos y mástil'],
+  ['chords','Acordes','Posiciones y diagramas claros'],
+  ['prog','Progresiones','Ritmos y armonías por país y género']
+ ];
  $('#homegrid').innerHTML=it.map(([v,t,d])=>`<button class="pedal card" data-a="go" data-v="${v}"><span class="knob">${ICON[v]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('');
 }
 const ICON={
