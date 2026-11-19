@@ -73,3 +73,27 @@ nav button.on{color:var(--or)}nav button.on::before{content:"";position:absolute
 #toast{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));background:var(--p1);border:1px solid var(--or);border-radius:12px;padding:12px 14px;opacity:0;pointer-events:none;transition:.2s;z-index:9;font-size:15px}
 #toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+input,select{-webkit-user-select:text;user-select:text}
+nav{grid-template-columns:repeat(6,1fr)}nav button{font-size:11px}nav svg{width:24px;height:24px}
+.card.wide{grid-column:span 2;min-height:110px;flex-direction:row;align-items:center;justify-content:flex-start;gap:16px}
+.sel{width:100%;min-height:50px;border-radius:12px;background:var(--p2);color:var(--tx);border:1px solid var(--line);padding:0 12px;font:inherit;font-size:17px;font-weight:700;margin:0 0 14px}
+.tbar{display:flex;align-items:center;gap:12px}
+.rec{width:76px;height:76px;border-radius:50%;border:4px solid #3a1a10;background:radial-gradient(circle at 35% 30%,#ff7a5a,#c2230f 70%);box-shadow:0 0 0 3px #222,0 0 18px #ff3b1a55}
+.rec.on{animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 3px #222,0 0 36px #ff3b1add}}
+.tbtn{width:60px;height:60px;border-radius:14px;background:var(--p2);border:1px solid var(--line);font-size:22px}
+.time{margin-left:auto;font-size:36px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--or)}
+.meter{height:8px;border-radius:4px;background:#0c0c0d;margin:14px 0;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--or),#ff3b1a)}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ctl button{min-height:46px;min-width:46px;padding:0 12px;border-radius:10px;background:var(--p2);border:1px solid var(--line);font-weight:700}
+.ctl button.on{border-color:var(--or);color:var(--or)}.ctl b{min-width:44px;text-align:center;font-size:24px}
+.trk{border-left:4px solid var(--c)}.th{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.tn{flex:1;min-width:0;background:none;border:0;color:var(--tx);font:inherit;font-weight:800;font-size:19px}
+.th button{width:44px;height:44px;border-radius:10px;background:var(--p2);border:1px solid var(--line);font-weight:800}
+.th button.on{background:var(--c);color:#111;border-color:var(--c)}
+.wv{position:relative;height:72px;border-radius:10px;background:#0c0c0d;overflow:hidden}
+.wv canvas{width:100%;height:100%;display:block}
+.ph{position:absolute;top:0;bottom:0;left:0;width:2px;background:#fff;box-shadow:0 0 8px #fff;pointer-events:none}
+.tf{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}.tf input{flex:1;min-width:110px}
+.tf button{min-height:40px;padding:0 10px;border-radius:10px;background:var(--p2);border:1px solid var(--line);font-size:14px;font-weight:700}
+.tf span{color:var(--mut);font-size:13px;min-width:48px;text-align:center}

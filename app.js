@@ -8,13 +8,15 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON
 const S={sk:0,sc:0,cr:0,cq:0,pr:0,ps:0,pm:0,pi:0,pro:store.get('pro',true)};
 
 /* ---------- DATOS ---------- */
-const SCALES=[
- {n:'Mayor',iv:[0,2,4,5,7,9,11]},{n:'Menor natural',iv:[0,2,3,5,7,8,10]},
- {n:'Menor armónica',iv:[0,2,3,5,7,8,11],pro:1},{n:'Menor melódica',iv:[0,2,3,5,7,9,11],pro:1},
- {n:'Pentatónica mayor',iv:[0,2,4,7,9]},{n:'Pentatónica menor',iv:[0,3,5,7,10]},{n:'Blues',iv:[0,3,5,6,7,10]},
- {n:'Jónico',iv:[0,2,4,5,7,9,11],pro:1},{n:'Dórico',iv:[0,2,3,5,7,9,10],pro:1},{n:'Frigio',iv:[0,1,3,5,7,8,10],pro:1},
- {n:'Lidio',iv:[0,2,4,6,7,9,11],pro:1},{n:'Mixolidio',iv:[0,2,4,5,7,9,10],pro:1},{n:'Eolio',iv:[0,2,3,5,7,8,10],pro:1},{n:'Locrio',iv:[0,1,3,5,6,8,10],pro:1}
+const SG=[
+['Básicas',0,[['Mayor','0 2 4 5 7 9 11'],['Menor natural','0 2 3 5 7 8 10'],['Pentatónica mayor','0 2 4 7 9'],['Pentatónica menor','0 3 5 7 10'],['Blues','0 3 5 6 7 10'],['Blues mayor','0 2 3 4 7 9']]],
+['Modos griegos',1,[['Jónico','0 2 4 5 7 9 11'],['Dórico','0 2 3 5 7 9 10'],['Frigio','0 1 3 5 7 8 10'],['Lidio','0 2 4 6 7 9 11'],['Mixolidio','0 2 4 5 7 9 10'],['Eolio','0 2 3 5 7 8 10'],['Locrio','0 1 3 5 6 8 10']]],
+['Menor armónica y sus modos',1,[['Menor armónica','0 2 3 5 7 8 11'],['Locrio ♮6','0 1 3 5 6 9 10'],['Jónico ♯5','0 2 4 5 8 9 11'],['Dórico ♯4','0 2 3 6 7 9 10'],['Frigio dominante','0 1 4 5 7 8 10'],['Lidio ♯2','0 3 4 6 7 9 11'],['Superlocrio ♭♭7','0 1 3 4 6 8 9']]],
+['Menor melódica y sus modos',1,[['Menor melódica','0 2 3 5 7 9 11'],['Dórico ♭2','0 1 3 5 7 9 10'],['Lidio aumentado','0 2 4 6 8 9 11'],['Lidio dominante','0 2 4 6 7 9 10'],['Mixolidio ♭6','0 2 4 5 7 8 10'],['Locrio ♮2','0 2 3 5 6 8 10'],['Alterada','0 1 3 4 6 8 10']]],
+['Simétricas',1,[['Cromática','0 1 2 3 4 5 6 7 8 9 10 11'],['Tonos enteros','0 2 4 6 8 10'],['Disminuida T-S','0 2 3 5 6 8 9 11'],['Disminuida S-T','0 1 3 4 6 7 9 10'],['Aumentada','0 3 4 7 8 11']]],
+['Otras y exóticas',1,[['Bebop dominante','0 2 4 5 7 9 10 11'],['Bebop mayor','0 2 4 5 7 8 9 11'],['Húngara menor','0 2 3 6 7 8 11'],['Árabe (doble armónica)','0 1 4 5 7 8 11'],['Hirajoshi','0 2 3 7 8'],['In-Sen','0 1 5 7 10'],['Egipcia','0 2 5 7 10'],['Napolitana menor','0 1 3 5 7 8 11'],['Napolitana mayor','0 1 3 5 7 9 11'],['Prometeo','0 2 4 6 9 10'],['Enigmática','0 1 4 6 8 10 11']]]
 ];
+const SCALES=SG.flatMap(([g,pro,l])=>l.map(([n,iv])=>({n,g,pro,iv:iv.split(' ').map(Number)})));
 /* Formas móviles de guitarra (cuerdas 6→1, -1 = muteada). Valor = traste relativo a la cejilla. */
 const CH=[
  {n:'Mayor',s:'',iv:[0,4,7],E:[0,2,2,1,0,0],A:[-1,0,2,2,2,0]},
@@ -166,7 +168,7 @@ const keys=(a,sel)=>`<div class="chips">${N.map((_,i)=>chip(a,i,nm(i),i===sel)).
 function renderScales(){
  const sc=SCALES[S.sc],pcs=sc.iv.map(i=>(S.sk+i)%12);
  $('#scales-body').innerHTML=keys('sk',S.sk)+
- `<div class="chips">${SCALES.map((s,i)=>chip('sc',i,s.n,i===S.sc,s.pro)).join('')}</div>
+ `<select id="scsel" class="sel" aria-label="Escala">${SG.map(([g,pro,l])=>`<optgroup label="${g}${pro?' · PRO':''}">${l.map(([n])=>{const i=SCALES.findIndex(x=>x.n===n);return `<option value="${i}"${i===S.sc?' selected':''}>${n}</option>`}).join('')}</optgroup>`).join('')}</select>
  <div class="pedal"><h3>${nm(S.sk)} ${sc.n}</h3><div class="notes">${pcs.map((p,i)=>`<div class="note ${i?'':'root'}"><b>${nm(p)}</b><small>${IVN[sc.iv[i]]}</small></div>`).join('')}</div>
  <p class="dim">Mástil: naranja = tónica.</p>${fretboard(pcs,S.sk)}</div>
  <button class="cta sm" data-a="playscale">▶ Escuchar escala</button>`;
@@ -192,8 +194,8 @@ function renderProg(){
  <button class="cta sm" data-a="playprog">▶ Reproducir progresión</button>`;
 }
 function renderHome(){
- const it=[['tuner','Afinador','Cromático, guitarra y bajo'],['scales','Escalas','14 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop']];
- $('#homegrid').innerHTML=it.map(([v,t,d])=>`<button class="pedal card" data-a="go" data-v="${v}"><span class="knob">${ICON[v]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('');
+ const it=[['tuner','Afinador','Cromático, guitarra y bajo'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop'],['studio','Estudio','Graba y mezcla hasta 8 pistas']];
+ $('#homegrid').innerHTML=it.map(([v,t,d])=>`<button class="pedal card${v==='studio'?' wide':''}" data-a="go" data-v="${v}"><span class="knob">${ICON[v]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('');
  $('.sw').classList.toggle('on',S.pro);
 }
 const ICON={
@@ -201,14 +203,16 @@ const ICON={
  tuner:'<svg viewBox="0 0 24 24"><path d="M3.5 18a9 9 0 1117 0M12 18l4-7"/></svg>',
  scales:'<svg viewBox="0 0 24 24"><path d="M3 20h4v-4h4v-4h4V8h4V4h2"/></svg>',
  chords:'<svg viewBox="0 0 24 24"><path d="M6 3v18M12 3v18M18 3v18M4 8h16M4 14h16"/></svg>',
+ studio:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>',
  prog:'<svg viewBox="0 0 24 24"><path d="M2 12h3l2-6 4 12 3-9 2 3h6"/></svg>'
 };
-const NAV=[['home','Inicio'],['tuner','Afinador'],['scales','Escalas'],['chords','Acordes'],['prog','Progres.']];
+const NAV=[['home','Inicio'],['tuner','Afinador'],['scales','Escalas'],['chords','Acordes'],['prog','Progres.'],['studio','Estudio']];
 function go(v){
  if(v!=='tuner'&&T.run)stopTuner();
+ if(v!=='studio'&&window.Studio)Studio.leave();
  $$('.view').forEach(e=>e.classList.toggle('on',e.id===v));
  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- ({scales:renderScales,chords:renderChords,prog:renderProg,home:renderHome}[v]||(()=>{}))();
+ ({scales:renderScales,chords:renderChords,prog:renderProg,home:renderHome,studio:()=>window.Studio&&Studio.show()}[v]||(()=>{}))();
  window.scrollTo(0,0);
 }
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200)}
@@ -240,6 +244,7 @@ document.addEventListener('click',e=>{
   case 'playprog':curProg().forEach((c,i)=>playChord(c.r,c.q,i*1.2));break;
  }
 });
+document.addEventListener('change',e=>{if(e.target.id!=='scsel')return;const i=+e.target.value;if(SCALES[i].pro&&!S.pro){toast('Escala PRO: se desbloqueará con un pago único de 2,99 €. Para probarla, activa el modo PRO en Inicio.');renderScales();return}S.sc=i;renderScales()});
 $('#a4').addEventListener('input',e=>{T.a4=+e.target.value;$('#a4v').textContent=T.a4;store.set('a4',T.a4)});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&T.run)stopTuner()});
 
