@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121212">
+<meta name="description" content="Afinador, escalas, acordes y progresiones para guitarristas. Sin publicidad.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MUSICTOOL">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+<title>MUSICTOOL</title>
+</head><body>
+<main>
+<section id="home" class="view on">
+  <div class="logo">MUSIC<b>TOOL</b></div>
+  <p class="tag">Afina. Practica. Compón.</p>
+  <div class="grid" id="homegrid"></div>
+  <div class="pedal row" id="proBox">
+    <div><b>Modo PRO (pruebas)</b><small>Desbloquea escalas, acordes y estilos avanzados. Pago único de 2,99 € cuando se integre. Sin anuncios, sin suscripción.</small></div>
+    <button class="sw" data-a="pro" aria-label="Activar modo PRO"></button>
+  </div>
+</section>
+
+<section id="tuner" class="view">
+  <h2>Afinador</h2>
+  <div class="seg">
+    <button data-a="tm" data-v="chromatic" class="on">Cromático</button>
+    <button data-a="tm" data-v="guitar">Guitarra</button>
+    <button data-a="tm" data-v="bass">Bajo</button>
+  </div>
+  <div class="pedal gauge">
+    <svg id="gauge" viewBox="0 0 300 165" role="img" aria-label="Medidor de afinación"></svg>
+    <div class="readout"><span id="note">–</span><sup id="oct"></sup></div>
+    <div class="hz"><span id="hz">0.0</span> Hz <span id="cents"></span></div>
+    <div id="status" class="status">Pulsa «Activar micrófono»</div>
+  </div>
+  <div id="strings" class="chips"></div>
+  <button id="mic" class="cta" data-a="mic">Activar micrófono</button>
+  <div class="pedal ref">
+    <label for="a4">Referencia La4 = <b id="a4v">440</b> Hz</label>
+    <input type="range" id="a4" min="430" max="450" step="1" value="440">
+  </div>
+  <p id="tmsg" class="msg" role="alert"></p>
+</section>
+
+<section id="scales" class="view"><h2>Escalas</h2><div id="scales-body"></div></section>
+<section id="chords" class="view"><h2>Acordes</h2><div id="chords-body"></div></section>
+<section id="prog" class="view"><h2>Progresiones</h2><div id="prog-body"></div></section>
+</main>
+<nav id="nav"></nav>
+<div id="toast" role="status"></div>
+<script src="app.js"></script>
+</body></html>
