@@ -239,7 +239,7 @@ function renderLook(){
  $('#look').innerHTML=`<b>Apariencia</b><div class="chips" style="margin:10px 0">${[['pedal','Pedal'],['aero','Cristal']].map(([k,n])=>chip('look',k,n,k===S.look)).join('')}</div><div class="chips" style="margin:0">${SKINS.map(s=>chip('skin',s.k,s.n,s.k===S.skin,s.k!=='pedal')).join('')}</div>`;
 }
 function renderHome(){renderLook();
- const it=[['tuner','Afinador','Guitarra, violín, bajo, guitarrón y más'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop'],['studio','Estudio','Graba y mezcla hasta 8 pistas']];
+ const it=[['tuner','Afinador','Guitarra, violín, bajo, guitarrón y más'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop'],['studio','Estudio','Graba y mezcla hasta 8 pistas'],['pdf','Partituras','Importa PDF y consulta tablaturas']];
  $('#homegrid').innerHTML=it.map(([v,t,d])=>`<button class="pedal card${v==='studio'?' wide':''}" data-a="go" data-v="${v}"><span class="knob">${ICON[v]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('');
  $('.sw').classList.toggle('on',S.pro);
 }
@@ -249,15 +249,16 @@ const ICON={
  scales:'<svg viewBox="0 0 24 24"><path d="M3 20h4v-4h4v-4h4V8h4V4h2"/></svg>',
  chords:'<svg viewBox="0 0 24 24"><path d="M6 3v18M12 3v18M18 3v18M4 8h16M4 14h16"/></svg>',
  studio:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>',
+ pdf:'<svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6zM14 2v6h6M8 13h9M8 17h9"/></svg>',
  prog:'<svg viewBox="0 0 24 24"><path d="M2 12h3l2-6 4 12 3-9 2 3h6"/></svg>'
 };
-const NAV=[['home','Inicio'],['tuner','Afinador'],['scales','Escalas'],['chords','Acordes'],['prog','Progres.'],['studio','Estudio']];
+const NAV=[['home','Inicio'],['tuner','Afinador'],['scales','Escalas'],['chords','Acordes'],['prog','Progres.'],['studio','Estudio'],['pdf','PDF']];
 function go(v){
  if(v!=='tuner'&&T.run)stopTuner();
  if(v!=='studio'&&window.Studio)Studio.leave();
  $$('.view').forEach(e=>e.classList.toggle('on',e.id===v));
  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- ({scales:renderScales,chords:renderChords,prog:renderProg,home:renderHome,studio:()=>window.Studio&&Studio.show()}[v]||(()=>{}))();
+ ({scales:renderScales,chords:renderChords,prog:renderProg,home:renderHome,studio:()=>window.Studio&&Studio.show(),pdf:()=>window.PDFStudy&&PDFStudy.show()}[v]||(()=>{}))();
  window.scrollTo(0,0);
 }
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200)}
