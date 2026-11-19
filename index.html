@@ -19,6 +19,7 @@
   <div class="logo">MUSIC<b>TOOL</b></div>
   <p class="tag">Afina. Practica. Compón.</p>
   <div class="grid" id="homegrid"></div>
+  <div class="pedal" id="look"></div>
   <div class="pedal row" id="proBox">
     <div><b>Modo PRO (pruebas)</b><small>Desbloquea escalas, acordes y estilos avanzados. Pago único de 2,99 € cuando se integre. Sin anuncios, sin suscripción.</small></div>
     <button class="sw" data-a="pro" aria-label="Activar modo PRO"></button>
@@ -27,11 +28,7 @@
 
 <section id="tuner" class="view">
   <h2>Afinador</h2>
-  <div class="seg">
-    <button data-a="tm" data-v="chromatic" class="on">Cromático</button>
-    <button data-a="tm" data-v="guitar">Guitarra</button>
-    <button data-a="tm" data-v="bass">Bajo</button>
-  </div>
+  <select id="inst" class="sel" aria-label="Instrumento"></select>
   <div class="pedal gauge">
     <svg id="gauge" viewBox="0 0 300 165" role="img" aria-label="Medidor de afinación"></svg>
     <div class="readout"><span id="note">–</span><sup id="oct"></sup></div>

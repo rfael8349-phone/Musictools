@@ -5,7 +5,7 @@ const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const nm=i=>N[((i%12)+12)%12].replace('#','♯');
 const IVN=['1','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
 const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-const S={sk:0,sc:0,cr:0,cq:0,pr:0,ps:0,pm:0,pi:0,pro:store.get('pro',true)};
+const S={sk:0,sc:0,cr:0,cq:0,pr:0,ps:0,pm:0,pi:0,pro:store.get('pro',true),look:store.get('look','pedal'),skin:store.get('skin','pedal')};
 
 /* ---------- DATOS ---------- */
 const SG=[
@@ -30,13 +30,17 @@ const CH=[
  {n:'Disminuido',s:'dim',iv:[0,3,6],E:null,A:[-1,0,1,2,1,-1],pro:1}
 ];
 const OPEN=[40,45,50,55,59,64];
-const STYLES=[{n:'Rock',k:'rock'},{n:'Metal',k:'metal',pro:1},{n:'Punk',k:'punk',pro:1},{n:'Blues',k:'blues'},{n:'Pop',k:'pop'}];
+const STYLES=[{n:'Rock',k:'rock'},{n:'Metal',k:'metal',pro:1},{n:'Punk',k:'punk',pro:1},{n:'Blues',k:'blues'},{n:'Pop',k:'pop'},{n:'Flamenco',k:'flamenco',pro:1},{n:'Paraguayo',k:'paraguayo',pro:1},{n:'Venezolano',k:'venezolano',pro:1},{n:'Mexicano',k:'mexicano',pro:1}];
 const PROG={
  rock:{M:['I IV V I','I bVII IV I','I V vi IV','I IV I V'],m:['i bVII bVI bVII','i bIII bVII IV','i iv bVII i','i bVII bVI V']},
  metal:{M:['I bVII bVI bVII','I bIII IV V','I bVI bVII I'],m:['i bVI bVII i','i bII i bVII','i bVI bIII bVII','i v bVI bVII']},
  punk:{M:['I IV V V','I V vi IV','I vi IV V','I IV I V'],m:['i bVII bVI V','i iv v i','i bIII bVII iv']},
  blues:{M:['I7 I7 I7 I7 IV7 IV7 I7 I7 V7 IV7 I7 V7','I7 IV7 I7 V7'],m:['i7 i7 i7 i7 iv7 iv7 i7 i7 V7 iv7 i7 V7','i7 iv7 i7 V7']},
- pop:{M:['I V vi IV','vi IV I V','I vi IV V','I iii IV V'],m:['i bVI bIII bVII','i bVII bVI bVII','bVI bVII i i','i iv bVI V']}
+ pop:{M:['I V vi IV','vi IV I V','I vi IV V','I iii IV V'],m:['i bVI bIII bVII','i bVII bVI bVII','bVI bVII i i','i iv bVI V']},
+ flamenco:{M:['I bII I V','I bII bVII bVI'],m:['i bVII bVI V','i bII i V','i bVI bVII V']},
+ paraguayo:{M:['I V7 I V7','I IV V7 I','I vi ii V7','I I7 IV V7'],m:['i iv V7 i','i bVII bVI V7','i V7 i V7']},
+ venezolano:{M:['I V7 I V7','I IV V7 I','I vi IV V7'],m:['i iv V7 i','i bVII bVI V7']},
+ mexicano:{M:['I IV V7 I','I V7 I IV','I vi ii V7','I IV I V7'],m:['i iv V7 i','i bVI iv V7','i bVII bVI V7']}
 };
 const DEG={I:0,II:2,III:4,IV:5,V:7,VI:9,VII:11};
 function parseTok(t,root){
@@ -76,8 +80,15 @@ function chordMidis(r,q){const c=CH[q],eb=(r-4+12)%12,ab=(r-9+12)%12;let fr,b;if
 function playChord(r,q,at=0){chordMidis(r,q).forEach((m,k)=>pluck(mf(m),at+k*.035,.42-k*.02))}
 
 /* ---------- AFINADOR ---------- */
-const STR={guitar:['E2','A2','D3','G3','B3','E4'],bass:['E1','A1','D2','G2']};
-const T={a4:store.get('a4',440),mode:'chromatic',run:false,hist:[],miss:0,needle:0,target:0,last:0,ok:false};
+const INSTG=[
+ ['Libre',[['chromatic','Cromático (cualquier nota)',''],['arpa','Arpa paraguaya (nota por cuerda)','','Toca una cuerda del arpa: el afinador muestra su nota. Afina cada cuerda a su nota de la escala de Do mayor.']]],
+ ['Guitarras y vihuelas',[['guitar','Guitarra estándar','E2 A2 D3 G3 B3 E4'],['dropd','Guitarra Drop D','D2 A2 D3 G3 B3 E4'],['dadgad','Guitarra DADGAD','D2 A2 D3 G3 A3 D4'],['halfdown','Guitarra medio tono abajo','D#2 G#2 C#3 F#3 A#3 D#4'],['vihuela','Vihuela mexicana','A3 D4 G4 B3 E4'],['guitarron','Guitarrón mexicano','A2 D3 G3 C4 E3 A2']]],
+ ['Bajos y contrabajos',[['bass','Bajo 4 cuerdas','E1 A1 D2 G2'],['bass5','Bajo 5 cuerdas','B0 E1 A1 D2 G2'],['tololoche','Tololoche / contrabajo','E1 A1 D2 G2']]],
+ ['Cuerda frotada',[['violin','Violín','G3 D4 A4 E5'],['viola','Viola','C3 G3 D4 A4'],['cello','Violonchelo','C2 G2 D3 A3']]],
+ ['Latinoamérica y más',[['cuatro','Cuatro venezolano','A3 D4 F#4 B3'],['charango','Charango','G4 C5 E5 A4 E5'],['uke','Ukelele','G4 C4 E4 A4'],['mandolin','Mandolina','G3 D4 A4 E5'],['banjo','Banjo 5 cuerdas','G4 D3 G3 B3 D4']]]
+];
+const INSTMAP={};INSTG.forEach(([g,l])=>l.forEach(([k,n,s,h])=>INSTMAP[k]={n,s:s?s.split(' '):null,hint:h}));
+const T={a4:store.get('a4',440),mode:(k=>INSTMAP[k]?k:'chromatic')(store.get('inst','chromatic')),run:false,hist:[],miss:0,needle:0,target:0,last:0,ok:false};
 const midi=n=>{const m=n.match(/^([A-G]#?)(\d)$/);return N.indexOf(m[1])+12*(+m[2]+1)};
 const pt=(c,r)=>{const a=c/50*55*Math.PI/180;return[150+r*Math.sin(a),150-r*Math.cos(a)]};
 function buildGauge(){
@@ -90,10 +101,13 @@ function buildGauge(){
  $('#gauge').innerHTML=h;
 }
 const tmsg=t=>{$('#tmsg').textContent=t||''};
+function buildInst(){
+ const e=$('#inst');e.innerHTML=INSTG.map(([g,l])=>`<optgroup label="${g}">${l.map(([k,n])=>`<option value="${k}">${n}</option>`).join('')}</optgroup>`).join('');e.value=T.mode;
+}
 function renderStrings(){
- const el=$('#strings');
- if(T.mode==='chromatic'){el.innerHTML='<small class="dim">Toca cualquier nota: se detecta sola.</small>';return}
- el.innerHTML=STR[T.mode].map(n=>`<button data-a="str" data-v="${n}">${n.replace(/\d/,'')}<small style="color:var(--mut);font-size:11px;margin-left:3px">${n.slice(-1)}</small></button>`).join('');
+ const el=$('#strings'),I=INSTMAP[T.mode];
+ if(!I.s){el.innerHTML=`<small class="dim">${I.hint||'Toca cualquier nota: se detecta sola.'}</small>`;return}
+ el.innerHTML=[...new Set(I.s)].map(n=>`<button data-a="str" data-v="${n}">${n.replace(/\d/,'').replace('#','♯')}<small style="color:var(--mut);font-size:11px;margin-left:3px">${n.slice(-1)}</small></button>`).join('');
 }
 function yin(b,sr){
  let e=0;for(let i=0;i<b.length;i++)e+=b[i]*b[i];
@@ -143,8 +157,8 @@ function idle(msg){
 }
 function show(f){
  const m=12*Math.log2(f/T.a4)+69;let tm=Math.round(m);
- if(T.mode!=='chromatic'){
-  const L=STR[T.mode].map(midi);tm=L.reduce((b,x)=>Math.abs(x-m)<Math.abs(b-m)?x:b);
+ if(INSTMAP[T.mode].s){
+  const L=INSTMAP[T.mode].s.map(midi);tm=L.reduce((b,x)=>Math.abs(x-m)<Math.abs(b-m)?x:b);
   $$('#strings button').forEach(b=>b.classList.toggle('hit',midi(b.dataset.v)===tm));
  }
  const c=(m-tm)*100,ok=Math.abs(c)<=5;
@@ -212,8 +226,20 @@ function renderProg(){
  <div class="chords">${p.map((c,i)=>`<div class="ch" data-a="pc" data-v="${i}"><small>${c.roman}</small><b>${chordName(c.r,c.q)}</b><small>${chordNotes(c.r,c.q).join(' ')}</small><br><u data-a="open" data-v="${i}">Ver diagrama</u></div>`).join('')}</div>
  <button class="cta sm" data-a="playprog">▶ Reproducir progresión</button>`;
 }
-function renderHome(){
- const it=[['tuner','Afinador','Cromático, guitarra y bajo'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop'],['studio','Estudio','Graba y mezcla hasta 8 pistas']];
+const SKINS=[{k:'pedal',n:'Clásico',tag:'Afina. Practica. Compón.'},
+ {k:'flamenco',n:'Flamenco',tag:'Duende y compás.',ps:'flamenco',pm:1,sc:'Frigio dominante',sk:4,pr:9},
+ {k:'paraguayo',n:'Paraguayo',tag:'Polca, guarania y arpa.',ps:'paraguayo',pm:0,sc:'Mayor'},
+ {k:'venezolano',n:'Venezolano',tag:'Joropo, vals y cuatro.',ps:'venezolano',pm:0,sc:'Mayor'},
+ {k:'mexicano',n:'Mexicano',tag:'Mariachi, son y ranchera.',ps:'mexicano',pm:0,sc:'Mayor'}];
+function setSkin(k,apply){
+ const sk=SKINS.find(x=>x.k===k)||SKINS[0];S.skin=sk.k;store.set('skin',sk.k);document.documentElement.dataset.skin=sk.k;$('.tag').textContent=sk.tag;
+ if(apply&&sk.ps){S.ps=STYLES.findIndex(x=>x.k===sk.ps);S.pm=sk.pm;S.sc=SCALES.findIndex(x=>x.n===sk.sc);if(sk.sk!=null)S.sk=sk.sk;if(sk.pr!=null)S.pr=sk.pr;genProg();toast('Estilo '+sk.n+': escala y progresiones ajustadas.')}
+}
+function renderLook(){
+ $('#look').innerHTML=`<b>Apariencia</b><div class="chips" style="margin:10px 0">${[['pedal','Pedal'],['aero','Cristal']].map(([k,n])=>chip('look',k,n,k===S.look)).join('')}</div><div class="chips" style="margin:0">${SKINS.map(s=>chip('skin',s.k,s.n,s.k===S.skin,s.k!=='pedal')).join('')}</div>`;
+}
+function renderHome(){renderLook();
+ const it=[['tuner','Afinador','Guitarra, violín, bajo, guitarrón y más'],['scales','Escalas','Más de 40 escalas y modos'],['chords','Acordes','Diagramas en el mástil'],['prog','Progresiones','Rock, metal, punk, blues, pop'],['studio','Estudio','Graba y mezcla hasta 8 pistas']];
  $('#homegrid').innerHTML=it.map(([v,t,d])=>`<button class="pedal card${v==='studio'?' wide':''}" data-a="go" data-v="${v}"><span class="knob">${ICON[v]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('');
  $('.sw').classList.toggle('on',S.pro);
 }
@@ -244,8 +270,10 @@ document.addEventListener('click',e=>{
  const cur=$('.view.on').id;
  switch(a){
   case 'go':go(v);break;
+  case 'look':S.look=v;store.set('look',v);document.documentElement.dataset.look=v;renderLook();break;
+  case 'skin':setSkin(v,true);renderLook();break;
   case 'pro':S.pro=!S.pro;store.set('pro',S.pro);renderHome();break;
-  case 'tm':T.mode=v;$$('.seg [data-a=tm]').forEach(x=>x.classList.toggle('on',x===b));renderStrings();idle(T.run?'Toca una cuerda…':'Pulsa «Activar micrófono»');break;
+  
   case 'mic':T.run?stopTuner():startTuner();break;
   case 'str':tone(mf(midi(v)),2,.3,0,'sine');break;
   case 'sk':S.sk=n;renderScales();break;
@@ -263,12 +291,12 @@ document.addEventListener('click',e=>{
   case 'playprog':curProg().forEach((c,i)=>playChord(c.r,c.q,i*1.2));break;
  }
 });
-document.addEventListener('change',e=>{if(e.target.id!=='scsel')return;const i=+e.target.value;if(SCALES[i].pro&&!S.pro){toast('Escala PRO: se desbloqueará con un pago único de 2,99 €. Para probarla, activa el modo PRO en Inicio.');renderScales();return}S.sc=i;renderScales()});
+document.addEventListener('change',e=>{if(e.target.id==='inst'){T.mode=e.target.value;store.set('inst',T.mode);renderStrings();idle(T.run?'Toca una cuerda…':'Pulsa «Activar micrófono»');return}if(e.target.id!=='scsel')return;const i=+e.target.value;if(SCALES[i].pro&&!S.pro){toast('Escala PRO: se desbloqueará con un pago único de 2,99 €. Para probarla, activa el modo PRO en Inicio.');renderScales();return}S.sc=i;renderScales()});
 $('#a4').addEventListener('input',e=>{T.a4=+e.target.value;$('#a4v').textContent=T.a4;store.set('a4',T.a4)});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&T.run)stopTuner()});
 
 /* ---------- INICIO ---------- */
 $('#nav').innerHTML=NAV.map(([v,t])=>`<button data-a="go" data-v="${v}" aria-label="${t}">${ICON[v]}<span>${t}</span></button>`).join('');
 $('#a4').value=T.a4;$('#a4v').textContent=T.a4;
-buildGauge();renderStrings();go('home');
+document.documentElement.dataset.look=S.look;setSkin(S.skin,false);buildInst();buildGauge();renderStrings();go('home');
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
