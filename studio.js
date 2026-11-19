@@ -2,7 +2,7 @@
 /* MUSICTOOL Estudio: grabadora multipista (PCM, Web Audio). */
 window.Studio=(()=>{
 const $=s=>document.querySelector(s),COL=['#ff6a00','#ffb020','#35e08a','#4db8ff','#c77dff','#ff5d73','#f2f2f2','#a3e635'];
-const St={tracks:[],bpm:100,metro:false,count:true,dev:'',rec:null,counting:false,play:false,t0:0,p0:0,srcs:[],ctx:null,lvl:0,built:false};
+const St={tracks:[],bpm:100,metro:false,clickRec:false,count:true,dev:'',rec:null,counting:false,play:false,t0:0,p0:0,srcs:[],ctx:null,lvl:0,built:false};
 const msg=t=>{const e=$('#smsg');if(e)e.textContent=t||''};
 const ctx=()=>{if(!St.ctx)St.ctx=new (window.AudioContext||window.webkitAudioContext)();if(St.ctx.resume)St.ctx.resume();return St.ctx};
 const dur=t=>t.data.length/t.sr,endT=()=>Math.max(0,...St.tracks.map(t=>t.off+dur(t))),spb=()=>60/St.bpm;
@@ -17,7 +17,7 @@ async function save(){try{const d=await db();d.transaction('p','readwrite').obje
 async function load(){try{const d=await db(),r=d.transaction('p').objectStore('p').get('proj');await new Promise(x=>{r.onsuccess=x;r.onerror=x});if(r.result){St.tracks=r.result.tracks||[];St.bpm=r.result.bpm||100}}catch{}}
 /* metrónomo */
 function click(at,acc){const c=ctx(),o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1100;g.gain.setValueAtTime(.35,at);g.gain.exponentialRampToValueAtTime(.001,at+.05);o.connect(g);g.connect(c.destination);o.start(at);o.stop(at+.06)}
-function metroRun(first){let nx=first,k=0;clearInterval(St.mt);St.mt=setInterval(()=>{const c=ctx();while(nx<c.currentTime+.3){if(St.metro)click(nx,k%4===0);nx+=spb();k++}},40)}
+function metroRun(first){let nx=first,k=0;clearInterval(St.mt);St.mt=setInterval(()=>{const c=ctx();while(nx<c.currentTime+.3){if(St.metro&&(!St.rec||St.clickRec))click(nx,k%4===0);nx+=spb();k++}},40)}
 /* reproducción */
 function play(from){
  const c=ctx();halt();St.t0=c.currentTime+.1;St.p0=from;St.play=true;
@@ -84,7 +84,7 @@ function renderTracks(){
 function ui(){
  const r=$('#recb');if(!r)return;
  r.classList.toggle('on',!!St.rec||St.counting);$('#playb').textContent=St.play&&!St.rec?'❚❚':'▶';
- $('#metro').classList.toggle('on',St.metro);$('#count').classList.toggle('on',St.count);$('#bpm').textContent=St.bpm;
+ $('#metro').classList.toggle('on',St.metro);$('#count').classList.toggle('on',St.count);$('#clickrec').classList.toggle('on',St.clickRec);$('#bpm').textContent=St.bpm;
 }
 /* exportar */
 async function exp(){
@@ -108,12 +108,12 @@ function build(){
  const b=$('#studio-body');
  b.innerHTML=`<div class="pedal"><div class="tbar"><button class="rec" id="recb" data-s="rec" aria-label="Grabar"></button><button class="tbtn" id="playb" data-s="play" aria-label="Reproducir">▶</button><button class="tbtn" data-s="stop" aria-label="Parar">■</button><div class="time" id="time">0:00.0</div></div>
  <div class="meter"><i id="lvl"></i></div>
- <div class="ctl"><span>BPM</span><button data-s="b-">−</button><b id="bpm">100</b><button data-s="b+">+</button><button id="metro" data-s="metro">Metrónomo</button><button id="count" data-s="count">Cuenta</button></div>
+ <div class="ctl"><span>BPM</span><button data-s="b-">−</button><b id="bpm">100</b><button data-s="b+">+</button><button id="metro" data-s="metro">Metrónomo</button><button id="count" data-s="count">Cuenta</button><button id="clickrec" data-s="clickrec">Clic al grabar</button></div>
  <select id="dev" class="sel" style="margin:0" aria-label="Entrada de audio"></select></div>
  <div id="tracks"></div>
  <button class="cta sm" data-s="export">Exportar mezcla (WAV)</button>
  <p class="msg" id="smsg" role="alert"></p>
- <p class="dim">Usa auriculares al grabar sobre otras pistas para evitar eco. Pulsa sobre una onda para mover el cursor. Ajusta el desfase con −10/+10 ms si una pista queda adelantada o atrasada.</p>`;
+ <p class="dim">Al grabar, el metrónomo solo suena en la cuenta de entrada, así no se graba. Si quieres clic durante la grabación, activa «Clic al grabar» y usa auriculares (también evitan el eco de las otras pistas). Pulsa sobre una onda para mover el cursor. Ajusta el desfase con −10/+10 ms si una pista queda adelantada o atrasada.</p>`;
  b.addEventListener('click',e=>{
   const el=e.target.closest('[data-s]');if(!el)return;const a=el.dataset.s,tr=el.closest('.trk'),t=tr&&St.tracks[+tr.dataset.i];
   switch(a){
@@ -123,6 +123,7 @@ function build(){
    case 'b-':case 'b+':St.bpm=Math.max(40,Math.min(220,St.bpm+(a==='b+'?1:-1)));ui();save();break;
    case 'metro':St.metro=!St.metro;ui();break;
    case 'count':St.count=!St.count;ui();break;
+   case 'clickrec':St.clickRec=!St.clickRec;if(St.clickRec)msg('Con «Clic al grabar» el metrónomo suena durante la grabación: úsalo solo con auriculares o se grabará.');else msg('');ui();break;
    case 'export':exp();break;
    case 'm':t.mute=!t.mute;el.classList.toggle('on',t.mute);applyG();save();break;
    case 's':t.solo=!t.solo;el.classList.toggle('on',t.solo);applyG();save();break;

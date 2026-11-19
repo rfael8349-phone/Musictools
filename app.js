@@ -54,7 +54,26 @@ function tone(f,d=1.4,v=.25,at=0,type='triangle'){
  o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.05)}catch(e){toast('No se pudo reproducir audio.')}
 }
 const mf=(m,a4=T.a4)=>a4*Math.pow(2,(m-69)/12);
-function playChord(r,q,at=0){const base=48+r;CH[q].iv.forEach((i,k)=>tone(mf(base+i),1.3,.12,at+k*.03))}
+/* Guitarra sintetizada: cuerda pulsada (Karplus-Strong con afinación fraccionaria) */
+const PL={};
+function pluckBuf(c,f){
+ const sr=c.sampleRate,key=Math.round(f*10)+'_'+sr;if(PL[key])return PL[key];
+ const len=Math.ceil(sr*2.4),b=c.createBuffer(1,len,sr),y=b.getChannelData(0),D=sr/f-.5,n0=Math.ceil(D)+2;
+ let mean=0;for(let i=0;i<n0;i++){y[i]=Math.random()*2-1;mean+=y[i]}mean/=n0;for(let i=0;i<n0;i++)y[i]-=mean;
+ for(let k=0;k<2;k++)for(let i=1;i<n0-1;i++)y[i]=(y[i-1]+y[i]*2+y[i+1])/4;
+ const T=Math.max(1.2,2.8-f/350),dc=Math.pow(.001,1/(T*f));
+ for(let i=n0;i<len;i++){const q=i-D,i0=Math.floor(q),fr=q-i0;y[i]=dc*.5*((y[i0]*(1-fr)+y[i0+1]*fr)+(y[i0-1]*(1-fr)+y[i0]*fr))}
+ let m=0;for(let i=0;i<len;i++)m=Math.max(m,Math.abs(y[i]));for(let i=0;i<len;i++)y[i]*=.9/m;
+ return PL[key]=b;
+}
+function out(){const c=ac();if(!c._o){const g=c.createGain();g.gain.value=.9;
+ const a=c.createBiquadFilter();a.type='peaking';a.frequency.value=110;a.gain.value=4;a.Q.value=1;
+ const b=c.createBiquadFilter();b.type='peaking';b.frequency.value=2800;b.gain.value=2;b.Q.value=.8;
+ const l=c.createBiquadFilter();l.type='lowpass';l.frequency.value=6500;
+ g.connect(a);a.connect(b);b.connect(l);l.connect(c.destination);c._o=g}return c._o}
+function pluck(f,at=0,v=.45){try{const c=ac(),s=c.createBufferSource(),g=c.createGain();s.buffer=pluckBuf(c,f);g.gain.value=v;s.connect(g);g.connect(out());s.start(c.currentTime+at)}catch(e){toast('No se pudo reproducir audio.')}}
+function chordMidis(r,q){const c=CH[q],eb=(r-4+12)%12,ab=(r-9+12)%12;let fr,b;if(c.E&&eb<=ab){fr=c.E;b=eb}else{fr=c.A;b=ab}return fr.map((x,i)=>x<0?-1:OPEN[i]+b+x).filter(x=>x>=0)}
+function playChord(r,q,at=0){chordMidis(r,q).forEach((m,k)=>pluck(mf(m),at+k*.035,.42-k*.02))}
 
 /* ---------- AFINADOR ---------- */
 const STR={guitar:['E2','A2','D3','G3','B3','E4'],bass:['E1','A1','D2','G2']};
@@ -231,7 +250,7 @@ document.addEventListener('click',e=>{
   case 'str':tone(mf(midi(v)),2,.3,0,'sine');break;
   case 'sk':S.sk=n;renderScales();break;
   case 'sc':S.sc=n;renderScales();break;
-  case 'playscale':SCALES[S.sc].iv.concat(12).forEach((i,k)=>tone(mf(60+S.sk+i),.5,.2,k*.35));break;
+  case 'playscale':SCALES[S.sc].iv.concat(12).forEach((i,k)=>pluck(mf(60+S.sk+i),k*.35,.5));break;
   case 'cr':S.cr=n;renderChords();break;
   case 'cq':S.cq=n;renderChords();break;
   case 'playchord':playChord(S.cr,S.cq);break;
